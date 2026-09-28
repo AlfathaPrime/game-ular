@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cyber Snake</title>
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+min-height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+background:linear-gradient(135deg,#0f172a,#1e1b4b);
+font-family:Segoe UI,sans-serif;
+color:white;
+}
+
+.game{
+width:100%;
+max-width:430px;
+padding:24px;
+background:rgba(30,41,59,.7);
+backdrop-filter:blur(10px);
+border-radius:24px;
+text-align:center;
+}
+
+h1{
+font-size:28px;
+font-weight:800;
+margin-bottom:8px;
+color:#4ade80;
+}
+
+#score{
+margin-bottom:20px;
+font-size:18px;
+font-weight:700;
+}
+
+#scoreValue{
+color:#4ade80;
+}
+
+#board{
+width:100%;
+aspect-ratio:1;
+background:#020617;
+border:3px solid #334155;
+border-radius:16px;
+display:grid;
+grid-template-columns:repeat(20,1fr);
+grid-template-rows:repeat(20,1fr);
+gap:1px;
+padding:4px;
+}
+
+.snake{
+background:linear-gradient(135deg,#22c55e,#15803d);
+border-radius:4px;
+}
+
+.head{
+background:linear-gradient(135deg,#4ade80,#22c55e);
+box-shadow:0 0 12px #4ade80;
+}
+
+.food{
+background:#f43f5e;
+border-radius:50%;
+animation:pulse 1s infinite alternate;
+}
+
+@keyframes pulse{
+from{transform:scale(.8);}
+to{transform:scale(1.1);}
+}
+
+.controls{
+margin-top:20px;
+display:grid;
+grid-template-columns:repeat(3,70px);
+gap:10px;
+justify-content:center;
+}
+
+.btn{
+height:60px;
+border:none;
+border-radius:15px;
+background:#334155;
+color:white;
+font-size:22px;
+cursor:pointer;
+}
+
+.btn:active{
+transform:scale(.9);
+}
+
+.empty{
+width:70px;
+height:60px;
+}
+
+.gameOverCard{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.8);
+display:none;
+justify-content:center;
+align-items:center;
+}
+
+.gameOverContent{
+background:#1e293b;
+padding:30px;
+border-radius:20px;
+text-align:center;
+width:300px;
+}
+
+.restartBtn{
+margin-top:20px;
+width:100%;
+padding:14px;
+border:none;
+border-radius:12px;
+background:#22c55e;
+color:white;
+font-weight:bold;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="game">
+
+<h1>🐍 Cyber Snake</h1>
+
+<div id="score">
+SCORE <span id="scoreValue">0</span>
+</div>
+
+<div id="board"></div>
+
+<div class="controls">
+<div class="empty"></div>
+<button class="btn" onclick="setDir('up')">▲</button>
+<div class="empty"></div>
+
+<button class="btn" onclick="setDir('left')">◀</button>
+<button class="btn" onclick="setDir('down')">▼</button>
+<button class="btn" onclick="setDir('right')">▶</button>
+</div>
+
+</div>
+
+<div class="gameOverCard" id="gameOverCard">
+<div class="gameOverContent">
+<h2>GAME OVER</h2>
+<p>Skor Akhir</p>
+<h1 id="finalScore">0</h1>
+<button class="restartBtn" onclick="restartGame()">
+Main Lagi
+</button>
+</div>
+</div>
+
+<script>
+
+const board = document.getElementById("board");
+const SIZE = 20;
+
+let snake;
+let food;
+let direction;
+let nextDirection;
+let score;
+let gameLoop;
+let gameRunning;
+
+function startGame(){
+
+snake = [
+{x:10,y:10},
+{x:9,y:10},
+{x:8,y:10}
+];
+
+direction = {x:1,y:0};
+nextDirection = {x:1,y:0};
+
+score = 0;
+gameRunning = true;
+
+document.getElementById("scoreValue").textContent = score;
+document.getElementById("gameOverCard").style.display = "none";
+
+spawnFood();
+
+clearInterval(gameLoop);
+gameLoop = setInterval(moveSnake,130);
+
+draw();
+}
+
+function spawnFood(){
+
+do{
+food = {
+x:Math.floor(Math.random()*SIZE),
+y:Math.floor(Math.random()*SIZE)
+};
+}
+while(
+snake.some(
+p => p.x === food.x && p.y === food.y
+)
+);
+
+}
+
+function moveSnake(){
+
+if(!gameRunning) return;
+
+direction = nextDirection;
+
+const head = snake[0];
+
+const newHead = {
+x:head.x + direction.x,
+y:head.y + direction.y
+};
+
+if(
+newHead.x < 0 ||
+newHead.y < 0 ||
+newHead.x >= SIZE ||
+newHead.y >= SIZE
+){
+gameOver();
+return;
+}
+
+for(let part of snake){
+if(
+part.x === newHead.x &&
+part.y === newHead.y
+){
+gameOver();
+return;
+}
+}
+
+snake.unshift(newHead);
+
+if(
+newHead.x === food.x &&
+newHead.y === food.y
+){
+score++;
+document.getElementById("scoreValue").textContent = score;
+spawnFood();
+}
+else{
+snake.pop();
+}
+
+draw();
+}
+
+function draw(){
+
+board.innerHTML = "";
+
+snake.forEach((part,index)=>{
+
+const div = document.createElement("div");
+
+div.className =
+index === 0
+? "snake head"
+: "snake";
+
+div.style.gridColumnStart = part.x + 1;
+div.style.gridRowStart = part.y + 1;
+
+board.appendChild(div);
+
+});
+
+const foodDiv = document.createElement("div");
+
+foodDiv.className = "food";
+foodDiv.style.gridColumnStart = food.x + 1;
+foodDiv.style.gridRowStart = food.y + 1;
+
+board.appendChild(foodDiv);
+
+}
+
+function setDir(dir){
+
+if(dir==="up" && direction.y!==1)
+nextDirection={x:0,y:-1};
+
+if(dir==="down" && direction.y!==-1)
+nextDirection={x:0,y:1};
+
+if(dir==="left" && direction.x!==1)
+nextDirection={x:-1,y:0};
+
+if(dir==="right" && direction.x!==-1)
+nextDirection={x:1,y:0};
+
+}
+
+document.addEventListener("keydown",(e)=>{
+
+if(e.key==="ArrowUp") setDir("up");
+if(e.key==="ArrowDown") setDir("down");
+if(e.key==="ArrowLeft") setDir("left");
+if(e.key==="ArrowRight") setDir("right");
+
+});
+
+function gameOver(){
+
+gameRunning = false;
+
+clearInterval(gameLoop);
+
+document.getElementById("finalScore").textContent = score;
+
+document.getElementById("gameOverCard").style.display = "flex";
+
+}
+
+function restartGame(){
+startGame();
+}
+
+startGame();
+
+</script>
+
+</body>
+</html>
